@@ -5,6 +5,7 @@ import sys
 import kendra_chat_anthropic as anthropic
 import kendra_chat_flan_xl as flanxl
 import kendra_chat_flan_xxl as flanxxl
+import kendra_chat_falcon_40b_instruct as falcon40b_instruct
 import kendra_chat_open_ai as openai
 
 
@@ -15,7 +16,8 @@ PROVIDER_MAP = {
     'openai': 'Open AI',
     'anthropic': 'Anthropic',
     'flanxl': 'Flan XL',
-    'flanxxl': 'Flan XXL'
+    'flanxxl': 'Flan XXL',
+    'falcon40b_instruct': "Falcon 40B Instruct"
 }
 
 # Check if the user ID is already stored in the session state
@@ -30,6 +32,7 @@ else:
 
 if 'llm_chain' not in st.session_state:
     if (len(sys.argv) > 1):
+        print(f"arg: {sys.argv[1]}")
         if (sys.argv[1] == 'anthropic'):
             st.session_state['llm_app'] = anthropic
             st.session_state['llm_chain'] = anthropic.build_chain()
@@ -39,13 +42,16 @@ if 'llm_chain' not in st.session_state:
         elif (sys.argv[1] == 'flanxxl'):
             st.session_state['llm_app'] = flanxxl
             st.session_state['llm_chain'] = flanxxl.build_chain()
+        elif (sys.argv[1] == 'falcon40b_instruct'):
+            st.session_state['llm_app'] = falcon40b_instruct
+            st.session_state['llm_chain'] = falcon40b_instruct.build_chain()
         elif (sys.argv[1] == 'openai'):
             st.session_state['llm_app'] = openai
             st.session_state['llm_chain'] = openai.build_chain()
         else:
             raise Exception("Unsupported LLM: ", sys.argv[1])
     else:
-        raise Exception("Usage: streamlit run app.py <anthropic|flanxl|flanxxl|openai>")
+        raise Exception("Usage: streamlit run app.py <anthropic|flanxl|flanxxl|falcon40b_instruct|openai>")
 
 if 'chat_history' not in st.session_state:
     st.session_state['chat_history'] = []

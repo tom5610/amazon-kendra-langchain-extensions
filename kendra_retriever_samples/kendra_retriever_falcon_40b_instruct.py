@@ -1,3 +1,4 @@
+
 from langchain.retrievers import AmazonKendraRetriever
 from langchain.chains import RetrievalQA
 from langchain import OpenAI
@@ -11,27 +12,34 @@ import os
 def build_chain():
     region = os.environ["AWS_REGION"]
     kendra_index_id = os.environ["KENDRA_INDEX_ID"]
-    endpoint_name = os.environ["FLAN_XXL_ENDPOINT"]
+    endpoint_name = os.environ["FALCON_40B_INSTRUCT_ENDPOINT"]
 
     class ContentHandler(LLMContentHandler):
         content_type = "application/json"
         accepts = "application/json"
 
         def transform_input(self, prompt: str, model_kwargs: dict) -> bytes:
-            input_str = json.dumps({"text_inputs": prompt}) #, "parameters": model_kwargs})
+            input_str = json.dumps({"inputs": prompt, **model_kwargs})
             return input_str.encode('utf-8')
         
         def transform_output(self, output: bytes) -> str:
             response_json = json.loads(output.read().decode("utf-8"))
             print(f"response: {response_json}")
-            return response_json["generated_texts"][0]
+            return response_json[0]["generated_text"]
 
     content_handler = ContentHandler()
 
     llm=SagemakerEndpoint(
             endpoint_name=endpoint_name, 
             region_name=region, 
-            model_kwargs={"temperature":1e-10, "max_length": 500},
+            model_kwargs={
+                "temperature":1e-10, 
+                "min_length": 200,
+                "max_length": 2000, 
+                "max_new_tokens":200,
+                "num_return_sequences":1,
+                "top_k":1
+            },
             content_handler=content_handler
         )
 
@@ -69,7 +77,7 @@ def run_chain(chain, prompt: str, history=[]):
 
 if __name__ == "__main__":
     chain = build_chain()
-    result = run_chain(chain, "What's SageMaker?")
+    result = run_chain(chain, "What's Kendra?")
     print(result['answer'])
     if 'source_documents' in result:
         print('Sources:')
